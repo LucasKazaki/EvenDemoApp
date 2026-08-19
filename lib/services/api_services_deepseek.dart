@@ -1,51 +1,30 @@
-import 'package:dio/dio.dart';
+import 'package:demo_ai_even/agent_studio/agent_studio_client.dart';
+import 'package:demo_ai_even/agent_studio/agent_studio_models.dart';
 
+/// Compatibility adapter retained so the original Even AI flow does not need
+/// to know which model or worker Agent Studio selects.
+///
+/// Agent Studio owns conversation routing, delegation, memory, and model
+/// selection. No provider API key is stored in this mobile application.
 class ApiDeepSeekService {
-  late Dio _dio;
+  ApiDeepSeekService({AgentStudioClient? client})
+      : _client = client ?? AgentStudioClient.instance;
 
-  ApiDeepSeekService() {
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: 'https://api.deepseek.com',
-        headers: {
-          'Authorization': 'Bearer ${const String.fromEnvironment("DASHSCOPE_API_KEY", defaultValue: "sk-5d8fa6e859d64b3c84862b90a9eb45d1")}', // replace with your apikey
-          'Content-Type': 'application/json',
-        },
-      ),
-    );
-  }
+  final AgentStudioClient _client;
 
   Future<String> sendChatRequest(String question) async {
-    final data = {
-      "model": "deepseek-chat",
-      "messages": [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": question}
-      ],
-    };
-    print("sendChatRequest------data----------$data--------");
-
     try {
-      final response = await _dio.post('/chat/completions', data: data);
-
-      if (response.statusCode == 200) {
-          print("Response: ${response.data}");
-
-          final data = response.data;
-          final content = data['choices']?[0]?['message']?['content'] ?? "Unable to answer the question";
-          return content;
-      } else {
-        print("Request failed with status: ${response.statusCode}");
-        return "Request failed with status: ${response.statusCode}";
-      }
-    } on DioError catch (e) {
-      if (e.response != null) {
-        print("Error: ${e.response?.statusCode}, ${e.response?.data}");
-        return "AI request error: ${e.response?.statusCode}, ${e.response?.data}";
-      } else {
-        print("Error: ${e.message}");
-        return "AI request error: ${e.message}";
-      }
+      final reply = await _client.sendMessage(
+        question,
+        source: 'even_g1',
+      );
+      return reply.displayText;
+    } on AgentStudioNotConfiguredException {
+      return 'Open Agent Studio settings in the phone app and pair this device.';
+    } on AgentStudioException catch (error) {
+      return error.message;
+    } catch (_) {
+      return 'Agent Studio could not complete this request.';
     }
   }
 }
