@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../agent_studio/agent_studio_client.dart';
 import '../agent_studio/agent_studio_config.dart';
+import '../agent_studio/agent_studio_runtime.dart';
 
 class AgentStudioSettingsPage extends StatefulWidget {
   const AgentStudioSettingsPage({super.key});
@@ -27,7 +30,7 @@ class _AgentStudioSettingsPageState extends State<AgentStudioSettingsPage> {
   @override
   void initState() {
     super.initState();
-    _load();
+    unawaited(_load());
   }
 
   Future<void> _load() async {
@@ -69,6 +72,9 @@ class _AgentStudioSettingsPageState extends State<AgentStudioSettingsPage> {
       var healthy = true;
       if (testAfterSave) {
         healthy = await AgentStudioClient.instance.healthCheck();
+      }
+      if (healthy) {
+        await AgentStudioRuntime.instance.restart();
       }
 
       if (!mounted) {
