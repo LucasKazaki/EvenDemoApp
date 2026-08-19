@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:demo_ai_even/agent_studio/agent_studio_runtime.dart';
 import 'package:demo_ai_even/ble_manager.dart';
 import 'package:demo_ai_even/services/evenai.dart';
 import 'package:demo_ai_even/views/even_list_page.dart';
@@ -26,6 +27,7 @@ class _HomePageState extends State<HomePage> {
     BleManager.get().setMethodCallHandler();
     BleManager.get().startListening();
     BleManager.get().onStatusChanged = _refreshPage;
+    unawaited(AgentStudioRuntime.instance.start());
   }
 
   void _refreshPage() => setState(() {});
@@ -34,16 +36,15 @@ class _HomePageState extends State<HomePage> {
     setState(() => isScanning = true);
     await BleManager.get().startScan();
     scanTimer?.cancel();
-    scanTimer = Timer(15.seconds, () {
-      // todo
-      _stopScan();
-    });
+    scanTimer = Timer(15.seconds, _stopScan);
   }
 
   Future<void> _stopScan() async {
     if (isScanning) {
       await BleManager.get().stopScan();
-      setState(() => isScanning = false);
+      if (mounted) {
+        setState(() => isScanning = false);
+      }
     }
   }
 
@@ -55,8 +56,8 @@ class _HomePageState extends State<HomePage> {
             final glasses = BleManager.get().getPairedGlasses()[index];
             return GestureDetector(
               onTap: () async {
-                String channelNumber = glasses['channelNumber']!;
-                await BleManager.get().connectToGlasses("Pair_$channelNumber");
+                final channelNumber = glasses['channelNumber']!;
+                await BleManager.get().connectToGlasses('Pair_$channelNumber');
                 _refreshPage();
               },
               child: Container(
@@ -75,7 +76,9 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         Text('Pair: ${glasses['channelNumber']}'),
                         Text(
-                            'Left: ${glasses['leftDeviceName']} \nRight: ${glasses['rightDeviceName']}'),
+                          'Left: ${glasses['leftDeviceName']} '
+                          '\nRight: ${glasses['rightDeviceName']}',
+                        ),
                       ],
                     ),
                   ],
@@ -89,11 +92,10 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          title: const Text('Even AI Demo'),
+          title: const Text('Agent Studio G1'),
           actions: [
             InkWell(
               onTap: () {
-                print("To Features Page...");
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const FeaturesPage()),
@@ -119,7 +121,7 @@ class _HomePageState extends State<HomePage> {
                 onTap: () async {
                   if (BleManager.get().getConnectionStatus() ==
                       'Not connected') {
-                    _startScan();
+                    await _startScan();
                   }
                 },
                 child: Container(
@@ -129,8 +131,11 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(5),
                   ),
                   alignment: Alignment.center,
-                  child: Text(BleManager.get().getConnectionStatus(),
-                      style: const TextStyle(fontSize: 16)),
+                  child: Text(
+                    BleManager.get().getConnectionStatus(),
+                    style: const TextStyle(fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -140,8 +145,6 @@ class _HomePageState extends State<HomePage> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () async {
-                      // todo
-                      print("To AI History List...");
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -157,21 +160,22 @@ class _HomePageState extends State<HomePage> {
                         child: StreamBuilder<String>(
                           stream: EvenAI.textStream,
                           initialData:
-                              "Press and hold left TouchBar to engage Even AI.",
+                              'Press and hold the left TouchBar to talk to Agent Studio.',
                           builder: (context, snapshot) => Obx(
                             () => EvenAI.isEvenAISyncing.value
                                 ? const SizedBox(
                                     width: 50,
                                     height: 50,
                                     child: CircularProgressIndicator(),
-                                  ) // Color(0xFFFEF991)
+                                  )
                                 : Text(
-                                    snapshot.data ?? "Loading...",
+                                    snapshot.data ?? 'Loading...',
                                     style: TextStyle(
-                                        fontSize: 14,
-                                        color: BleManager.get().isConnected
-                                            ? Colors.black
-                                            : Colors.grey.withOpacity(0.5)),
+                                      fontSize: 14,
+                                      color: BleManager.get().isConnected
+                                          ? Colors.black
+                                          : Colors.grey.withOpacity(0.5),
+                                    ),
                                     textAlign: TextAlign.center,
                                   ),
                           ),

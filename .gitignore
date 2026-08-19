@@ -10,6 +10,15 @@
 .svn/
 migrate_working_dir/
 
+# Local secrets and development environments
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+*.p12
+*.mobileprovision
+
 # IntelliJ related
 *.iml
 *.ipr
