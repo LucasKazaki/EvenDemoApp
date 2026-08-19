@@ -127,7 +127,8 @@ class AgentStudioClient {
           HttpHeaders.contentTypeHeader: 'application/json',
           HttpHeaders.acceptHeader: 'application/json',
         },
-        validateStatus: (status) => status != null && status >= 200 && status < 300,
+        validateStatus: (status) =>
+            status != null && status >= 200 && status < 300,
       ),
     );
   }
@@ -275,10 +276,11 @@ class AgentStudioEventStream {
     if (_closed || _reconnectTimer?.isActive == true) {
       return;
     }
-    _reconnectAttempt = (_reconnectAttempt + 1).clamp(1, 8);
+    _reconnectAttempt =
+        (_reconnectAttempt + 1).clamp(1, 8).toInt();
     final seconds = 1 << (_reconnectAttempt - 1);
     _reconnectTimer = Timer(
-      Duration(seconds: seconds.clamp(1, 60)),
+      Duration(seconds: seconds.clamp(1, 60).toInt()),
       () => connect().catchError((_) {}),
     );
   }
